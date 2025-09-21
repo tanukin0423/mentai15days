@@ -30,11 +30,11 @@
             padding: 2rem;
         }
         /* PC・タブレット用スタイル */
-        .nav-button {
+        .nav-button-pc {
             transition: all 0.3s ease;
             position: relative;
         }
-        .nav-button.active::after {
+        .nav-button-pc.active::after {
             content: '';
             position: absolute;
             bottom: -8px;
@@ -50,16 +50,11 @@
         @media (max-width: 768px) {
             .nav-container {
                 display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .nav-row {
-                display: flex;
                 flex-wrap: wrap;
                 justify-content: center;
-                gap: 0.5rem;
+                gap: 1rem;
             }
-            .nav-button {
+            .nav-button-mobile {
                 width: 44px;
                 height: 44px;
                 border-radius: 9999px;
@@ -73,10 +68,10 @@
                 transition: all 0.2s ease;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
-            .nav-button:hover {
+            .nav-button-mobile:hover {
                 background-color: #cbd5e1;
             }
-            .nav-button.active {
+            .nav-button-mobile.active {
                 background-color: #3b82f6;
                 color: #ffffff;
                 box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
@@ -85,14 +80,6 @@
             /* PC用の横スクロールを無効化 */
             .overflow-x-auto {
                 overflow-x: hidden;
-            }
-            .mobile-description {
-                display: block;
-            }
-        }
-        @media (min-width: 769px) {
-            .mobile-description {
-                display: none;
             }
         }
 
@@ -282,6 +269,32 @@
             background: #3b82f6;
             color: white;
         }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link.active {
+            font-weight: bold;
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .questions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .questions-list li {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .questions-list li:hover {
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -290,15 +303,31 @@
             <header class="text-center mb-8">
                 <h1 class="text-4xl font-bold text-gray-800 mb-2">15日間でできる面接対策</h1>
                 <p class="text-xl text-gray-500">面接官の心を掴む回答を準備しよう</p>
-                <div class="mobile-description text-center mt-4 text-gray-600 px-4">
-                    <p>このプログラムは、スマートフォンに最適化されています。下の丸いボタンの数字は、面接練習日を１５日間に振り分けたものです。毎日１日ずつ練習することで、あなたの面接力が上がります。</p>
-                </div>
+                <p class="text-xl text-blue-500">はじめに 、画面下にある「音声ガイド」を聞いてください</p>
             </header>
 
-            <nav class="flex justify-center mb-8 overflow-x-auto pb-2">
-                <div id="nav-container" class="flex flex-row space-x-2 md:space-x-4">
-                    </div>
+            <!-- 新しいタブ型メニュー -->
+            <nav class="flex justify-center mb-8">
+                <button id="tab-daily" class="nav-link py-2 px-4 mx-2 text-lg font-semibold text-gray-600 border-b-2 border-transparent active">日数スケジュール版</button>
+                <button id="tab-category" class="nav-link py-2 px-4 mx-2 text-lg font-semibold text-gray-600 border-b-2 border-transparent">重要度別版</button>
             </nav>
+
+            <!-- 質問リストコンテナ -->
+            <div id="lists-container" class="mb-8">
+                <!-- 日数スケジュールリスト -->
+                <ul id="list-daily" class="questions-list active"></ul>
+                <!-- 重要度別リスト -->
+                <div id="lists-category" class="hidden">
+                    <nav class="flex justify-center mb-8 overflow-x-auto pb-2 space-x-4">
+                        <button id="category-core" class="category-button py-2 px-4 rounded-full text-sm font-semibold text-gray-600 border border-gray-300 active">最重要質問</button>
+                        <button id="category-key" class="category-button py-2 px-4 rounded-full text-sm font-semibold text-gray-600 border border-gray-300">重要質問</button>
+                        <button id="category-good" class="category-button py-2 px-4 rounded-full text-sm font-semibold text-gray-600 border border-gray-300">準備しておくとよい質問</button>
+                    </nav>
+                    <ul id="list-core" class="questions-list active"></ul>
+                    <ul id="list-key" class="questions-list hidden"></ul>
+                    <ul id="list-good" class="questions-list hidden"></ul>
+                </div>
+            </div>
 
             <div class="progress-bar mb-8">
                 <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
@@ -316,15 +345,38 @@
     </div>
 
     <script>
-    const navContainer = document.getElementById('nav-container');
     const contentContainer = document.getElementById('content-container');
     const progressBarFill = document.getElementById('progress-bar-fill');
     const modal = document.getElementById('copy-modal');
     const modalMessage = document.getElementById('modal-message');
+    
+    // 新しいメニュー
+    const tabDaily = document.getElementById('tab-daily');
+    const tabCategory = document.getElementById('tab-category');
+    const listDaily = document.getElementById('list-daily');
+    const listsCategory = document.getElementById('lists-category');
+
+    // 重要度別ボタンとリスト
+    const categoryButtons = document.querySelectorAll('.category-button');
+    const lists = {
+        core: document.getElementById('list-core'),
+        key: document.getElementById('list-key'),
+        good: document.getElementById('list-good')
+    };
 
     const questionsData = {
+        0: {
+            title: 'はじめに',
+            description: 'このプログラムへようこそ！あなたの面接対策をサポートするための音声ガイドです。まずはこのガイドを聞いて、ツールの使い方を把握しましょう。',
+            points: [
+                '本ツールの概要と使い方',
+                '「日数スケジュール版」と「重要度別版」の使い分け',
+                '各コンテンツの見方（音声ガイド、回答例、AIフィードバック）'
+            ],
+            audio_source: 'audio/introduction.mp3'
+        },
         1: {
-            title: '自己紹介をお願いします',
+            title: '#1日目# 自己紹介をお願いします',
             description: '自己紹介は面接の第一印象を決めます。簡潔に、しかし熱意を込めて話せるように準備しましょう。',
             points: ['30秒以内でまとめる', '氏名と簡単な経歴', 'スキルや強み、志望動機に繋がる要素を簡潔に'],
             example_simple: '〇〇大学の〇〇と申します。学生時代は、サークルのリーダーとしてイベントを企画・運営し、多くの人を巻き込む力を培ってきました。この経験を活かし、貴社でチームの活性化に貢献したいと考えております。本日はどうぞよろしくお願いいたします。',
@@ -334,10 +386,11 @@
                 '熱意が伝わるように話す練習をした',
                 '録音して客観的に確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します。より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・話の構成（結論、理由、具体例、結論）は適切か\n・面接官がさらに深掘りしたくなるような内容になっているか\n・説得力を高めるための具体的な表現方法\n・熱意が伝わるような言葉選び\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します。より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・話の構成（結論、理由、具体例、結論）は適切か\n・面接官がさらに深掘りしたくなるような内容になっているか\n・説得力を高めるための具体的な表現方法\n・熱意が伝わるような言葉選び\n\n**質問**：',
+            audio_source: 'audio/day1_guidance.mp3'
         },
         2: {
-        title: '学生時代に最も打ち込んだことは何ですか？',
+        title: '#2日目# 学生時代に最も打ち込んだことは何ですか？',
         description: '通称「ガクチカ」。単なる活動内容ではなく、そこから何を学び、どう成長したのかを具体的に伝えましょう。',
         points: ['結論から話す（何を頑張ったか）', 'なぜそれに打ち込んだか', '具体的な行動と工夫', '結果と学び'],
         example_simple: '学生時代は、カフェでのアルバイトに最も力を入れました。お客様満足度向上を目指し、メニュー改善を提案した結果、売上が10%増加しました。この経験から、課題解決能力を培うことができました。',
@@ -372,10 +425,11 @@
             '具体的なエピソードを盛り込んだ',
             '学びを明確にした'
         ],
-        prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・STAR法（Situation, Task, Action, Result）に基づいた構成になっているか\n・「なぜ頑張ったのか」という動機が明確か\n・成果だけでなく、そこから得られた学びや成長が具体的に表現されているか\n・入社後にどのように活かせるかという視点が盛り込まれているか\n\n**質問**：'
+        prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・STAR法（Situation, Task, Action, Result）に基づいた構成になっているか\n・「なぜ頑張ったのか」という動機が明確か\n・成果だけでなく、そこから得られた学びや成長が具体的に表現されているか\n・入社後にどのように活かせるかという視点が盛り込まれているか\n\n**質問**：',
+        audio_source: 'audio/day2_guidance.mp3'
     },
         3: {
-            title: 'あなたの自己PRを教えてください',
+            title: '#3日目# あなたの自己PRを教えてください',
             description: '自己PRは、面接官にあなたの強みや個性を効果的に伝え、あなたが企業にどのような貢献ができるかを示す重要な機会です。単に「私の強みは〇〇です」と答えるだけでなく、具体的なエピソードを交え、その強みが仕事でどう活かせるかを明確に伝えましょう。',
             points: ['結論から話す', '具体的なエピソードで補強', '入社後の貢献を伝える'],
             example_simple: '私の強みは、目標達成に向けた粘り強さです。大学時代、研究で困難に直面した際も、諦めずに図書館に通い、教授や先輩にも積極的に相談することで、最終的に納得のいく成果を出すことができました。この経験から、困難な課題に対しても粘り強く取り組む力を養いました.御社の営業職では、この粘り強さを活かし、たとえ目標達成が難航しても、お客様一人ひとりに向き合い、最後まで諦めずに結果を出すことに貢献したいと考えています.',
@@ -400,10 +454,11 @@
                 'エピソードが具体的で、成果を定量的に示せるか（例：「売上が〇%向上した」）',
                 '入社後の貢献イメージが明確になっているか'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・話の構成（結論、理由，具体例、貢献）は適切か\n・強みを裏付ける具体的なエピソードが説得力を持っているか\n・強みが応募企業の業務とどのように結びついているか明確か\n・入社後の貢献イメージが具体的で、意欲が伝わるか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・話の構成（結論、理由，具体例、貢献）は適切か\n・強みを裏付ける具体的なエピソードが説得力を持っているか\n・強みが応募企業の業務とどのように結びついているか明確か\n・入社後の貢献イメージが具体的で、意欲が伝わるか\n\n**質問**：',
+            audio_source: 'audio/day3_guidance.mp3'
         },
         4: {
-            title: '志望動機を教えてください',
+            title: '#4日目# 志望動機を教えてください',
             description: 'なぜその会社を選んだのか、あなたの熱意を伝えましょう.企業の事業内容やビジョンを理解していることが重要です。',
             points: ['結論から話す', 'なぜこの会社なのか', '入社後どのように貢献したいか'],
             example_simple: '貴社の「社会課題をテクノロジーで解決する」というビジョンに共感し、志望いたしました.私のプログラミングスキルを活かし、より良いサービス開発に貢献したいです。',
@@ -413,10 +468,11 @@
                 '競合他社ではなく、なぜこの会社なのかを明確にした',
                 '入社後の具体的な貢献内容を話せるか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・結論ファーストで簡潔にまとめられているか\n・企業への理解度と、なぜその企業でなければならないのかが明確か\n・入社後の貢献イメージが具体的で、説得力があるか\n・熱意が伝わるような表現になっているか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・結論ファーストで簡潔にまとめられているか\n・企業への理解度と、なぜその企業でなければならないのかが明確か\n・入社後の貢献イメージが具体的で、説得力があるか\n・熱意が伝わるような表現になっているか\n\n**質問**：',
+            audio_source: 'audio/day4_guidance.mp3'
         },
         5: {
-            title: '入社後に活かせるスキルや経験は何ですか？',
+            title: '#5日目# 入社後に活かせるスキルや経験は何ですか？',
             description: '単なる自我PRではなく、入社後の貢献イメージを具体的に伝えましょう.企業が求めるスキルを事前にリサーチしておくことが重要です。',
             points: ['結論から話す', '具体的なエピソードでスキルを補強', '入社後どのように貢献できるかを明確に'],
             example_simple: '私の強みは、チームで協力して物事を進めるコミュニケーション能力です.アルバイトで培ったこのスキルを活かし、チームの連携を強化し、円滑なプロジェクト推進に貢献したいです。',
@@ -426,10 +482,11 @@
                 'スキルを裏付ける具体的なエピソードがあるか確認した',
                 '入社後の貢献イメージが明確か確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・自分のスキルと企業の求めるスキルが結びついているか\n・そのスキルを裏付ける具体的なエピソードがあるか\n・入社後の貢献イメージが具体的で、説得力があるか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・自分のスキルと企業の求めるスキルが結びついているか\n・そのスキルを裏付ける具体的なエピソードがあるか\n・入社後の貢献イメージが具体的で、説得力があるか\n\n**質問**：',
+            audio_source: 'audio/day5_guidance.mp3'
         },
         6: {
-            title: '成功体験と失敗体験を教えてください',
+            title: '#6日目# 成功体験と失敗体験を教えてください',
             description: '成功体験では再現性を、失敗体験ではそこから何を学び、どう成長したかを伝えましょう。',
             points: ['成功体験：目標設定、行動、結果を明確に', '失敗体験：失敗から何を学び、どう活かしたかを強調'],
             example_simple: '成功体験は，アルバイトで売上目標を達成したことです.失敗体験は、計画が不十分でプロジェクトが遅延したことです.この失敗から、事前の準備が重要だと学びました。',
@@ -438,23 +495,25 @@
                 '成功体験では、結果だけでなくプロセスを説明したか',
                 '失敗体験は、学びと反省を具体的に話せるか'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・成功体験では、なぜ成功したのかという再現性が伝わるか\n・失敗体験では、失敗を客観的に分析し、そこから得た学びが具体的に示されているか\n・両方のエピソードから、あなたの成長ストーリーが見えるか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・成功体験では、なぜ成功したのかという再現性が伝わるか\n・失敗体験では、失敗を客観的に分析し、そこから得た学びが具体的に示されているか\n・両方のエピソードから、あなたの成長ストーリーが見えるか\n\n**質問**：',
+            audio_source: 'audio/day6_guidance.mp3'
         },
         7: {
-            title: 'あなたが他者を巻き込んで何かを成し遂げた経験を話してください',
+            title: '#7日目# あなたが他者を巻き込んで何かを成し遂げた経験を話してください',
             description: 'この質問は、あなたのリーダーシップやコミュニケーション能力、そして周囲を動かす影響力を見極めるためのものです.具体的なエピソードを通じて、どのように他者を巻き込み、どんな成果を出したのかをアピールしましょう。',
             points: ['結論から話す', 'なぜその目標を立てたのか', '他者を巻き込むためにどのような行動をとったか', '結果と、そこから得られた学び'],
             example_simple: '学生時代に、学園祭の企画で来場者数を増やすために、SNSチームを立ち上げ，企画内容を広く告知しました.その結果、多くの来場者を呼び込むことに成功しました。',
-            example_detailed: '私が他者を巻き込んで成し遂げた経験は、大学の研究プロジェクトです.当初、チームメンバーのモチベーションが低く、なかなか進捗しませんでした.そこで、私はメンバー一人ひとりと個別で話し合い，彼らが何に興味を持っているか、どのような役割なら力を発揮できるかを聞き出しました.その結果、得意分野に合わせた役割分担を再構築し、全員が主体的にプロジェクトに参加するようになりました.最終的には、当初の目標を大幅に上回る成果を出すことができ、チームメンバーからも「自分の力を発揮できた」と感謝されました.この経験から，目標達成のためには，一方的な指示ではなく、メンバーの意欲を引き出す「巻き込み力」が重要だと学びました.',
+            example_detailed: '私が他者を巻き込んで成し遂げた経験は、大学の研究プロジェクトです.当初、チームメンバーのモチベーションが低く、なかなか進捗しませんでした.そこで、私はメンバー一人ひとりと個別で話し合い，彼らが何に興味を持っているか、どのような役割なら力を発揮できるかを聞き出しました.その結果、得意分野に合わせた役割分担を再構築し、全員が主体的にプロジェクトに参加するようになりました.最終的には、当初の目標を大幅に上回る成果を出すことができ、チームメンバーからも「自分の力を発揮できた」と感謝されました.この経験から，目標達成のためには，一方的な指示ではなく、メンバーの意欲を引き出す「巻き込み力」」が重要だと学びました.',
             checklist: [
                 '目標達成のプロセスに具体性があるか確認した',
                 '他者との関わり方を具体的に話せるか確認した',
                 '結果だけでなく、そこから得られた学びを明確にしたか'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・他者を巻き込むために行った具体的な行動や工夫が伝わるか\n・巻き込んだことでどのような変化が起こり、どのような成果に繋がったか\n・この経験から学んだリーダーシップや協調性などの資質が明確か\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・他者を巻き込むために行った具体的な行動や工夫が伝わるか\n・巻き込んだことでどのような変化が起こり、どのような成果に繋がったか\n・この経験から学んだリーダーシップや協調性などの資質が明確か\n\n**質問**：',
+            audio_source: 'audio/day7_guidance.mp3'
         },
         8: {
-            title: 'ストレスはどのように解消しますか？',
+            title: '#8日目# ストレスはどのように解消しますか？',
             description: 'ストレス耐性をアピールする質問です.健全なストレス解消法を具体的に答えましょう。',
             points: ['具体的な解消法を答える', '仕事に影響が出ない方法を伝える', 'ポジティブな側面をアピール'],
             example_simple: 'ストレスを感じたときは、好きな音楽を聴いたり、友人と食事をしたりしてリフレッシュします。',
@@ -463,10 +522,11 @@
                 '回答が健康的で具体的か確認した',
                 'ストレスを放置しない姿勢を示しているか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・回答が具体的で、健康的な解消法であるか\n・ストレスを溜め込まず、仕事に支障をきたさない姿勢が伝わるか\n・回答を通して、あなたのポジティブな側面がアピールできているか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・回答が具体的で、健康的な解消法であるか\n・ストレスを溜め込まず、仕事に支障をきたさない姿勢が伝わるか\n・回答を通して、あなたのポジティブな側面がアピールできているか\n\n**質問**：',
+            audio_source: 'audio/day8_guidance.mp3'
         },
         9: {
-            title: 'あなたの強みと弱みを改めて教えてください',
+            title: '#9日目# あなたの強みと弱みを改めて教えてください',
             description: '自我分析の深さを問う質問です.長所と短所を仕事に結びつて説明しましょう。',
             points: ['長所と短所を具体的なエピソードで補強', '短所の克服策を具体的に話す'],
             example_simple: '私の強みは、目標達成に向けた粘り強さです.短所は、完璧を求めすぎてしまう点です.現在は、タスクの優先順位付けをすることで，効率的に仕事を進めるようにしています。',
@@ -475,10 +535,10 @@
                     '私の強みは，周囲の意見を尊重し、チームの協調性を高めることができる点です.学生時代のグループワークでは、メンバーの意見を丁寧に聞き、議論を円滑に進める役割を担っていました.一方、弱みは、自分の意見を主張するのが苦手な点です.現在は、意見交換の場で、事前に自分の考えを整理し、簡潔に伝える練習をすることで、積極的に発言できるよう努力しています.'
                 ],
                 '課題解決力／視野が狭い': [
-                    '私の強みは、課題解決のために深く考え抜き、粘り強く行動する力です.大学の研究で、難解なデータ分析に直面した際、複数の文献を読み解き、教授や専門家に相談することで、最適な分析手法を見つけ出すことができました.結果として、研究の精度を高め、新たな知見を発見することができました.一方で、弱みは、物事に集中しすぎてしまい、視野が狭くなる点です.現在は、定期的に全体像を俯瞰する時間を設けることで、この弱みを克服しようと努めています.'
+                    '私の強みは、課題解決のための情報収集力と分析力です.大学の研究で、難解なデータ分析に直面した際、複数の文献を読み解き、教授や専門家に相談することで、最適な分析手法を見つけ出すことができました.結果として、研究の精度を高め、新たな知見を発見することができました.一方で、弱みは、物事に集中しすぎてしまい、視野が狭くなる点です.現在は、定期的に全体像を俯瞰する時間を設けることで、この弱みを克服しようと努めています.'
                 ],
                 '主体性／先走りすぎる': [
-                    '私の強みは、指示を待つのではなく、自ら考えて行動できる主体性と行動力です.アルバイト先の飲食店で、非効率な作業フローを見つけ、改善策を提案・実行した結果、業務効率が20%向上しました.一方、弱みは、時々先走りすぎてしまい、周囲との連携が不足してしまう点です.現在は、大きな決断をする前に必ずチームメンバーに相談し、意見を求めるように心がけています.'
+                    '私の強みは、指示を待つのではなく、自ら課題を見つて行動できる主体性と行動力です.アルバイト先の飲食店で、非効率な作業フローを見つけ、改善策を提案・実行した結果、業務効率が20%向上しました.一方、弱みは、時々先走りすぎてしまい、周囲との連携が不足してしまう点です.現在は、大きな決断をする前に必ずチームメンバーに相談し、意見を求めるように心がけています.'
                 ],
                 '計画性／臨機応変に対応できない': [
                     '私の強みは、計画を立てて物事を着実に進めることができる計画性です.プロジェクトの進捗を細かく管理し、常に目標を意識することで、遅延なくタスクを完了させることができます.一方で、弱みは、予期せぬトラブルに直面した際、臨機応変に対応するのが苦手な点です.この弱みを克服するため、日頃から想定外の事態に備え、複数の対応策を考えておくよう意識しています.'
@@ -498,10 +558,11 @@
                 '弱みが致命的でないか確認した',
                 '弱みの克服策を具体的に話せるか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・強みと弱みが矛盾せず、自己分析の深さが伝わるか\n・強みを仕事でどう活かすか、弱みをどう克服するかという具体的な行動が示されているか\n・弱みが、裏を返せば強みであるような表現になっているか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・強みと弱みが矛盾せず、自己分析の深さが伝わるか\n・強みを仕事でどう活かすか、弱みをどう克服するかという具体的な行動が示されているか\n・弱みが、裏を返せば強みであるような表現になっているか\n\n**質問**：',
+            audio_source: 'audio/day9_guidance.mp3'
         },
        10: {
-        title: '入社後のキャリアプランを教えてください',
+        title: '#10日目# 入社後のキャリアプランを教えてください',
         description: '入社後も成長意欲があることをアピールする質問です.企業のビジョンと自分のキャリアプランを一致させましょう。',
         points: ['結論から話す', '具体的な職種やスキルを挙げる', '企業のビジョンと結びつける'],
         example_simple: '入社後は、まずマーケティングの専門知識を習得し、将来的には新製品の企画に携わりたいです。',
@@ -532,10 +593,11 @@
             'キャリアプランに具体性があるか確認した',
             '企業のビジョンと合致しているか確認した'
         ],
-        prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・キャリアプランが応募企業で実現可能か\n・短期的な目標と長期的な目標が明確か\n・企業のビジョンや事業内容と、自分のキャリアプランが一致しているか\n\n**質問**：'
+        prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・キャリアプランが応募企業で実現可能か\n・短期的な目標と長期的な目標が明確か\n・企業のビジョンや事業内容と、自分のキャリアプランが一致しているか\n\n**質問**：',
+        audio_source: 'audio/day10_guidance.mp3'
     },
         11: {
-            title: '今までで一番達成感を感じたことは何ですか？',
+            title: '#11日目# 今までで一番達成感を感じたことは何ですか？',
             description: 'あなたのモチベーションの源泉や、困難にどう立ち向かったかをアピールしましょう。',
             points: ['結論から話す', '目標設定、行動、結果を明確に', 'そこから得られた学びを伝える'],
             example_simple: '大学の卒業論文で、難解なテーマに挑戦し、納得のいく論文を完成させたことです。',
@@ -557,10 +619,11 @@
                 '達成感を感じたエピソードが具体的か確認した',
                 'その経験で何を学んだか明確に話せるか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・なぜ達成感を感じたのか、その動機が明確か\n・困難に直面した際にどのように乗り越えたかというプロセスが具体的に示されているか\n・達成した経験から、どのような能力や価値観が培われたか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・なぜ達成感を感じたのか、その動機が明確か\n・困難に直面した際にどのように乗り越えたかというプロセスが具体的に示されているか\n・達成した経験から、どのような能力や価値観が培われたか\n\n**質問**：',
+            audio_source: 'audio/day11_guidance.mp3'
         },
         12: {
-            title: '最近気になるニュースや社会問題はありますか？',
+            title: '#12日目# 最近気になるニュースや社会問題はありますか？',
             description: '知的好奇心や社会への関心度を問う質問です.ただ答えるだけでなく、なぜ気になったのか、自分はどう考えるかを述べましょう。',
             points: ['関心のある分野のニュースを選ぶ', 'なぜそのニュースが気になったか', '自分なりの意見を述べる'],
             example_simple: 'AI技術の進化に関するニュースです.特に、AIが人間の仕事をどのように変えていくかという点に注目しています。',
@@ -569,10 +632,11 @@
                 '答えが抽象的になっていないか確認した',
                 '自分の意見や考えを具体的に述べたか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・興味を持った理由が明確で、説得力があるか\n・自分の意見や考えが、表面的なものでなく、深く考察されているか\n・企業や業界との関連性があるか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・興味を持った理由が明確で、説得力があるか\n・自分の意見や考えが、表面的なものでなく、深く考察されているか\n・企業や業界との関連性があるか\n\n**質問**：',
+            audio_source: 'audio/day12_guidance.mp3'
         },
         13: {
-            title: '逆質問はありますか？',
+            title: '#13日目# 逆質問はありますか？',
             description: '逆質問は、入社意欲や企業への理解度をアピールする最後のチャンスです.複数のパターンを参考に、あなたらしい質問を準備しましょう。',
             points: ['3つ以上は準備する', '企業のHPや採用情報を調べれば分かる質問は避ける', '入社後の働き方やキャリアに関する質問がベター'],
             example_simple: '一般的な質問：\n1. 入社後、早期に貢献するために、今のうちから学んでおくべきことはありますか？\n2. 貴社で活躍されている方の共通点や、仕事への向き合い方について教えていただけますか？\n3. 〇〇様が仕事でやりがいを感じるのはどのような時ですか？',
@@ -610,10 +674,11 @@
                 '逆質問を3つ以上準備したか',
                 '企業のことを深く調べていることが伝わる質問か確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・質問の意図が明確で、入社への熱意が伝わるか\n・企業のホームページや採用情報を見れば分かるような質問を避けているか\n・面接官への尊敬や、対話を通じて学びたいという姿勢が感じられるか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・質問の意図が明確で、入社への熱意が伝わるか\n・企業のホームページや採用情報を見れば分かるような質問を避けているか\n・面接官への尊敬や、対話を通じて学びたいという姿勢が感じられるか\n\n**質問**：',
+            audio_source: 'audio/day13_guidance.mp3'
         },
         14: {
-            title: 'あなたの座右の銘を教えてください',
+            title: '#14日目# あなたの座右の銘を教えてください',
             description: '価値観や行動指針を問う質問です.座右の銘に込められた意味と、それがあなたの行動にどう影響しているかを伝えましょう。',
             points: ['座右の銘を述べる', 'なぜその言葉を選んだか', '具体的なエピソードを交えて説明する'],
             example_simple: '「為せば成る」です.目標に向かって努力すれば、必ず道は開けると信じています。',
@@ -622,10 +687,11 @@
                 '座右の銘に説得力があるか確認した',
                 'エピソードに具体性があるか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・座右の銘が、あなたの価値観や行動指針と一貫しているか\n・具体的なエピソードを通じて、その言葉を体現していることが伝わるか\n・言葉選びや表現が、あなたの個性を引き出しているか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・座右の銘が、あなたの価値観や行動指針と一貫しているか\n・具体的なエピソードを通じて、その言葉を体現していることが伝わるか\n・言葉選びや表現が、あなたの個性を引き出しているか\n\n**質問**：',
+            audio_source: 'audio/day14_guidance.mp3'
         },
         15: {
-            title: '面接全体を振り返ろう',
+            title: '#15日目# 面接全体を振り返ろう',
             description: '最終的な仕上げとして、これまでの練習内容を総復習しましょう。',
             points: ['全ての質問に対して自信を持って答えられるか確認', '声の大きさ、話す速度、表情を意識', '入退室の練習も行う'],
             example_simple: 'すべての質問に対して、3分以内で簡潔に答えられるように練習しました。',
@@ -635,35 +701,20 @@
                 '声の大きさ、話す速度、表情を意識したか確認した',
                 '本番同様のシミュレーション練習をしたか確認した'
             ],
-            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・面接全体の流れを通して、一貫性のある自己PRができているか\n・話す内容だけでなく、話し方や態度も好印象を与えるものになっているか\n・特に自信がない部分や、練習が必要な点がないか\n\n**質問**：'
+            prompt_focus: '以下に、面接の質問に対する私の回答を記載します.より面接官に響くように改善点を具体的に教えてください。\n\n**フィードバックのポイント**：\n・面接全体の流れを通して、一貫性のある自己PRができているか\n・話す内容だけでなく、話し方や態度も好印象を与えるものになっているか\n・特に自信がない部分や、練習が必要な点がないか\n\n**質問**：',
+            audio_source: 'audio/day15_guidance.mp3'
         }
     };
 
-    let currentDay = 1;
-    let currentAudio = null;
-
-    // ナビゲーションボタンを生成
-    const generateNavButtons = () => {
-        navContainer.innerHTML = '';
-        const navLayouts = [
-            [1, 5],
-            [6, 10],
-            [11, 15]
-        ];
-
-        navLayouts.forEach(range => {
-            const navRow = document.createElement('div');
-            navRow.className = 'nav-row';
-            for (let i = range[0]; i <= range[1]; i++) {
-                const button = document.createElement('button');
-                button.dataset.day = i;
-                button.textContent = `Day ${i}`;
-                button.className = `nav-button py-2 px-4 rounded-full text-sm font-semibold text-gray-600 hover:bg-blue-50 transition-colors duration-200`;
-                navRow.appendChild(button);
-            }
-            navContainer.appendChild(navRow);
-        });
+    // カテゴリごとの質問IDを修正
+    const categories = {
+        core: [1,2,3,4,9, 10, 13],
+        key: [5, 6, 7, 8],
+        good: [11, 12, 14, 15]
     };
+
+    let currentDay = 0; // はじめに(day 0)から開始
+    let currentAudio = null;
 
     // 各日のコンテンツをレンダリングする関数
     const renderDayContent = (day) => {
@@ -671,25 +722,25 @@
         const data = questionsData[day];
         if (!data) return;
 
-        // ナビゲーションボタンのactive状態を更新
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            btn.classList.remove('active', 'text-blue-500', 'bg-blue-100');
-            if (parseInt(btn.dataset.day) === day) {
-                btn.classList.add('active', 'text-blue-500', 'bg-blue-100');
+        // リストの項目をアクティブにする
+        document.querySelectorAll('.questions-list li').forEach(item => {
+            item.classList.remove('bg-blue-200');
+            if (parseInt(item.dataset.day) === day) {
+                item.classList.add('bg-blue-200');
             }
         });
-
+        
         // コンテンツを生成
         contentContainer.innerHTML = `
             <div class="space-y-8">
                 <section class="bg-indigo-50 p-6 rounded-2xl border border-indigo-200 shadow-inner">
                     <h3 class="text-xl md:text-2xl font-bold text-indigo-800 mb-4 flex items-center">
-                        <span>本日の音声ガイダンス</span>
+                        <span>${data.title} - 音声ガイド</span>
                     </h3>
                     <p class="text-gray-600">
-                        今日のテーマと学習のポイントを音声で確認しましょう。
+                        ${data.description}
                     </p>
-                    <div class="audio-player" id="audio-player-day${day}">
+                    <div class="audio-player" id="audio-player">
                         <div class="player-controls">
                             <button class="player-btn play-pause-btn">
                                 <i class="fas fa-play"></i>
@@ -705,8 +756,8 @@
                         </div>
                         <div class="speed-control">
                             <span>再生速度:</span>
-                            <button class="speed-btn" data-speed="1.0">1.0x</button>
-                            <button class="speed-btn active" data-speed="1.2">1.2x</button>
+                            <button class="speed-btn active" data-speed="1">1.0x</button>
+                            <button class="speed-btn" data-speed="1.2">1.2x</button>
                             <button class="speed-btn" data-speed="1.5">1.5x</button>
                             <button class="speed-btn" data-speed="0.8">0.8x</button>
                         </div>
@@ -715,12 +766,12 @@
                         </div>
                     </div>
                 </section>
-
+                
+                ${day !== 0 ? `
                 <section class="bg-gray-50 p-6 rounded-2xl shadow-inner">
                     <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
                         ${data.title}
                     </h2>
-                    <p class="text-gray-600 mb-4">${data.description}</p>
                     <ul class="list-disc list-inside space-y-1 text-gray-700">
                         ${data.points.map(point => `<li>${point}</li>`).join('')}
                     </ul>
@@ -771,18 +822,19 @@
                         </div>
                     </div>
                 </section>
+                ` : ''}
             </div>
         `;
 
         // 音声プレーヤーを初期化
-        initAudioPlayer(day);
+        initAudioPlayer(data.audio_source);
         attachEventListeners();
         updateProgressBar();
     };
 
     // 音声プレーヤーを初期化する関数
-    const initAudioPlayer = (day) => {
-        const audioPlayer = document.getElementById(`audio-player-day${day}`);
+    const initAudioPlayer = (audioSrc) => {
+        const audioPlayer = document.getElementById('audio-player');
         if (!audioPlayer) return;
 
         const playPauseBtn = audioPlayer.querySelector('.play-pause-btn');
@@ -794,14 +846,17 @@
         const audioLoading = audioPlayer.querySelector('.audio-loading');
         const speedButtons = audioPlayer.querySelectorAll('.speed-btn');
 
-        // 音声ファイルのパス（仮想のパスです。実際のパスに置き換えてください）
-        const audioSrc = `day${day}_guidance.mp3`;
+        // 既存の音声を停止
+        if (currentAudio) {
+            currentAudio.pause();
+        }
         
         // Audioオブジェクトを作成
         const audio = new Audio(audioSrc);
+        currentAudio = audio;
         
         // 再生速度のデフォルト値を設定
-        audio.playbackRate = 1.2;
+        audio.playbackRate = 1.0;
         
         // 読み込み中の表示
         audioLoading.style.display = 'block';
@@ -819,17 +874,7 @@
         // 再生/一時停止ボタン
         playPauseBtn.addEventListener('click', () => {
             if (audio.paused) {
-                // 他の音声を停止
-                if (currentAudio && currentAudio !== audio) {
-                    currentAudio.pause();
-                    const otherPlayBtn = document.querySelector('.player-btn i.fa-pause');
-                    if (otherPlayBtn) {
-                        otherPlayBtn.className = 'fas fa-play';
-                    }
-                }
-                
                 audio.play();
-                currentAudio = audio;
             } else {
                 audio.pause();
             }
@@ -1009,23 +1054,101 @@
 
     // プログレスバーを更新する関数
     const updateProgressBar = () => {
-        const navButtons = document.querySelectorAll('.nav-button');
-        const progress = (currentDay / 15) * 100;
+        const checkedCount = document.querySelectorAll('.checklist input[type="checkbox"]:checked').length;
+        const totalCount = document.querySelectorAll('.checklist input[type="checkbox"]').length;
+        const progress = (checkedCount / totalCount) * 100;
         progressBarFill.style.width = `${progress}%`;
     };
+    
+    // タブメニューの切り替え
+    tabDaily.addEventListener('click', () => {
+        tabDaily.classList.add('active');
+        tabCategory.classList.remove('active');
+        listDaily.classList.remove('hidden');
+        listsCategory.classList.add('hidden');
+        renderDayContent(1);
+    });
+
+    tabCategory.addEventListener('click', () => {
+        tabCategory.classList.add('active');
+        tabDaily.classList.remove('active');
+        listDaily.classList.add('hidden');
+        listsCategory.classList.remove('hidden');
+        
+        // 重要度別リストの初期表示
+        const activeCategoryButton = document.querySelector('#lists-category .category-button.active');
+        const activeCategory = activeCategoryButton ? activeCategoryButton.id.replace('category-', '') : 'core';
+        const activeList = lists[activeCategory];
+        
+        document.querySelectorAll('#lists-category .questions-list').forEach(list => list.classList.add('hidden'));
+        activeList.classList.remove('hidden');
+
+        // 最初の項目を表示
+        const firstDay = categories[activeCategory][0];
+        renderDayContent(firstDay);
+    });
+    
+    // カテゴリナビゲーションのイベントリスナー
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // カテゴリボタンのactive状態を切り替え
+            categoryButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // 質問リストの表示を切り替え
+            const category = button.id.replace('category-', '');
+            for (const key in lists) {
+                if (key === category) {
+                    lists[key].classList.remove('hidden');
+                } else {
+                    lists[key].classList.add('hidden');
+                }
+            }
+            
+            // 最初の項目を表示
+            const firstDay = categories[category][0];
+            renderDayContent(firstDay);
+        });
+    });
+
+    // 質問リストの項目にイベントリスナーを追加
+    const listsContainer = document.getElementById('lists-container');
+    listsContainer.addEventListener('click', (e) => {
+        const listItem = e.target.closest('li');
+        if (listItem && listItem.dataset.day) {
+            const day = parseInt(listItem.dataset.day);
+            renderDayContent(day);
+        }
+    });
 
     // ページ読み込み時の初期設定
     document.addEventListener('DOMContentLoaded', () => {
-        generateNavButtons();
-        // ナビゲーションボタンにイベントリスナーを追加
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const day = parseInt(button.dataset.day);
-                renderDayContent(day);
-            });
-        });
-        renderDayContent(1);
+        renderQuestionsList();
+        renderDayContent(0); // はじめに(Day 0)を表示
     });
+
+    // カテゴリごとの質問リストをレンダリング
+    const renderQuestionsList = () => {
+        // 日数スケジュール版のリストを生成
+        listDaily.innerHTML = '';
+        for (let i = 1; i <= 15; i++) {
+            const listItem = document.createElement('li');
+            listItem.textContent = questionsData[i].title;
+            listItem.dataset.day = i;
+            listDaily.appendChild(listItem);
+        }
+
+        // 重要度別版のリストを生成
+        for (const category in lists) {
+            lists[category].innerHTML = '';
+            categories[category].forEach(day => {
+                const listItem = document.createElement('li');
+                listItem.textContent = questionsData[day].title;
+                listItem.dataset.day = day;
+                lists[category].appendChild(listItem);
+            });
+        }
+    };
 </script>
 </body>
 </html>
